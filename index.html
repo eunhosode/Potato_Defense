@@ -1,0 +1,1098 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Potato Kingdom Defense</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#252219;color:#222;font-family:Arial,sans-serif;overflow:hidden}
+body{display:grid;place-items:center}.wrap{position:relative;width:min(100vw,177.7778vh);aspect-ratio:16/9;box-shadow:0 0 40px #0008;background:#ebf5e1}
+canvas{display:block;width:100%;height:100%;touch-action:none}.tip{position:fixed;right:10px;bottom:8px;color:#fff9;font-size:12px;pointer-events:none}
+</style></head><body><div class="wrap"><canvas id="game" width="1280" height="720" aria-label="Potato Kingdom Defense"></canvas></div><div class="tip">?熬곣뫕???븐뻼?? F11</div>
+<script>window.onerror=function(m,u,l,c){document.body.innerHTML='<pre style="color:red;background:white;font:18px monospace;white-space:pre-wrap">'+m+'\nline '+l+':'+c+'</pre>'}</script>
+<script>
+'use strict';
+const DATA={allies:{"potato":{"key":"potato","name":"Potato","hp":180,"attack":25,"attack_interval":1,"attack_range":12,"speed":52,"cost":90,"cooldown":2,"radius":21,"color":[171,126,72]},"boiled":{"key":"boiled","name":"Boiled","hp":480,"attack":38,"attack_interval":1.3,"attack_range":12,"speed":32,"cost":220,"cooldown":5,"radius":27,"color":[223,195,130]},"roasted":{"key":"roasted","name":"Roasted","hp":330,"attack":60,"attack_interval":1.2,"attack_range":14,"speed":42,"cost":230,"cooldown":5,"radius":24,"color":[145,86,43],"damage_type":"fire"},"fried":{"key":"fried","name":"Fried","hp":150,"attack":18,"attack_interval":0.35,"attack_range":12,"speed":78,"cost":210,"cooldown":4,"radius":19,"color":[244,193,65],"first_hit_multiplier":2},"sprout_archer":{"key":"sprout_archer","name":"Sprout Archer","hp":170,"attack":32,"attack_interval":0.9,"attack_range":155,"speed":40,"cost":260,"cooldown":5,"radius":20,"color":[104,164,76]},"stone_guard":{"key":"stone_guard","name":"Stone Guard","hp":900,"attack":28,"attack_interval":1.5,"attack_range":12,"speed":22,"cost":420,"cooldown":9,"radius":32,"color":[116,110,100],"armor_multiplier":0.72},"seed_medic":{"key":"seed_medic","name":"Seed Medic","hp":260,"attack":12,"attack_interval":1.5,"attack_range":70,"speed":34,"cost":360,"cooldown":7,"radius":21,"color":[194,151,86],"heal_power":70,"heal_interval":3,"heal_range":135},"starch_cannon":{"key":"starch_cannon","name":"Starch Cannon","hp":230,"attack":95,"attack_interval":2.4,"attack_range":220,"speed":24,"cost":520,"cooldown":10,"radius":25,"color":[230,226,198],"splash_radius":95},"shieldbearer":{"key":"shieldbearer","name":"Shieldbearer","hp":380,"attack":14,"attack_interval":1.5,"attack_range":12,"speed":38,"cost":140,"cooldown":3.5,"radius":25,"color":[154,111,67],"armor_multiplier":0.82,"knockback_multiplier":0.3},"potato_charger":{"key":"potato_charger","name":"Potato Charger","hp":340,"attack":45,"attack_interval":0.85,"attack_range":14,"speed":68,"cost":300,"cooldown":6,"radius":24,"color":[203,120,54],"first_hit_multiplier":2.5,"first_hit_knockback":70}},enemies:{"sweet":{"key":"sweet","name":"Sweet Potato","hp":160,"attack":28,"attack_interval":1,"attack_range":12,"speed":38,"radius":21,"color":[160,79,120],"reward":50},"roasted_sweet":{"key":"roasted_sweet","name":"Roasted Sweet","hp":380,"attack":50,"attack_interval":1.35,"attack_range":14,"speed":29,"radius":27,"color":[115,57,84],"damage_type":"fire","reward":110},"sweet_fries":{"key":"sweet_fries","name":"Sweet Fries","hp":130,"attack":16,"attack_interval":0.35,"attack_range":12,"speed":82,"radius":19,"color":[230,140,50],"reward":100},"mattang":{"key":"mattang","name":"Mattang","hp":520,"attack":45,"attack_interval":1.2,"attack_range":14,"speed":25,"radius":29,"color":[192,108,60],"shield":420,"shield_damage_cap":22,"shield_break_damage":85,"shield_break_radius":115,"reward":180},"boss_easy":{"key":"boss_easy","name":"General Goguma","hp":950,"attack":65,"attack_interval":1.35,"attack_range":18,"speed":23,"radius":40,"color":[135,70,150],"damage_type":"fire","is_boss":true,"reward":450},"boss":{"key":"boss","name":"General Goguma","hp":1400,"attack":80,"attack_interval":1.2,"attack_range":18,"speed":24,"radius":44,"color":[135,70,150],"damage_type":"fire","is_boss":true,"reward":600},"sweet_archer":{"key":"sweet_archer","name":"Sweet Archer","hp":170,"attack":24,"attack_interval":1.45,"attack_range":155,"speed":28,"radius":20,"color":[112,63,138],"reward":110},"sweet_rammer":{"key":"sweet_rammer","name":"Sweet Rammer","hp":260,"attack":58,"attack_interval":1.25,"attack_range":14,"speed":92,"radius":24,"color":[128,67,96],"reward":115},"sweet_priest":{"key":"sweet_priest","name":"Sweet Priest","hp":260,"attack":18,"attack_interval":1.5,"attack_range":85,"speed":26,"radius":23,"color":[190,144,205],"reward":140,"heal_power":65,"heal_interval":3.2,"heal_range":145},"sweet_bomber":{"key":"sweet_bomber","name":"Sweet Bomber","hp":230,"attack":82,"attack_interval":2.2,"attack_range":205,"speed":23,"radius":25,"color":[92,53,78],"reward":160,"splash_radius":90},"grand_general":{"key":"grand_general","name":"Grand General Goguma","hp":2600,"attack":105,"attack_interval":1.05,"attack_range":20,"speed":22,"radius":52,"color":[95,42,115],"damage_type":"fire","is_boss":true,"reward":1200,"armor_multiplier":0.9},"sweet_mauler":{"key":"sweet_mauler","name":"Sweet Mauler","hp":460,"attack":48,"attack_interval":1.6,"attack_range":16,"speed":32,"radius":29,"color":[102,53,76],"reward":140,"attack_knockback_every":3,"attack_knockback_distance":90},"sweet_drummer":{"key":"sweet_drummer","name":"Sweet War Drummer","hp":280,"attack":15,"attack_interval":1.8,"attack_range":80,"speed":25,"radius":24,"color":[178,92,115],"reward":200,"aura_radius":170,"aura_attack_speed_bonus":0.18,"aura_move_speed_bonus":0.12}},chapters:{1:{
+    
+    1: {
+        "name": "1-1 Suspicious Root Vegetables",
+        "subtitle": "One Sweet Potato at a time. Learn the basic battle rhythm.",
+        "available_units": ["potato"],
+        "ally_base_hp": 1600,
+        "enemy_base_hp": 900,
+        "waves": [
+            [4.0, [["sweet", 1, 0.0]]],
+            [9.5, [["sweet", 1, 0.0]]],
+            [15.0, [["sweet", 1, 0.0]]],
+            [20.5, [["sweet", 1, 0.0]]],
+            [26.0, [["sweet", 1, 0.0]]],
+            [31.5, [["sweet", 1, 0.0]]],
+            [37.0, [["sweet", 1, 0.0]]],
+            [42.5, [["sweet", 1, 0.0]]],
+            [48.0, [["sweet", 1, 0.0]]],
+            [53.5, [["sweet", 1, 0.0]]],
+            [59.0, [["sweet", 1, 0.0]]],
+            [64.5, [["sweet", 1, 0.0]]],
+        ],
+    },
+
+    
+    2: {
+        "name": "1-2 Gathering Roots",
+        "subtitle": "Sweet Potatoes alternate between solo patrols and two-unit squads.",
+        "available_units": ["potato"],
+        "ally_base_hp": 1650,
+        "enemy_base_hp": 1150,
+        "waves": [
+            [4.0, [["sweet", 1, 0.0]]],
+            [10.0, [["sweet", 1, 0.0], ["sweet", 1, 0.0]]],
+            [17.0, [["sweet", 1, 0.0]]],
+            [23.0, [["sweet", 1, 0.0], ["sweet", 1, 0.0]]],
+            [30.0, [["sweet", 1, 0.0]]],
+            [36.0, [["sweet", 1, 0.0], ["sweet", 1, 0.0]]],
+            [43.0, [["sweet", 1, 0.0]]],
+            [49.0, [["sweet", 1, 0.0], ["sweet", 1, 0.0]]],
+            [56.0, [["sweet", 1, 0.0]]],
+            [62.0, [["sweet", 1, 0.0], ["sweet", 1, 0.0]]],
+            [69.0, [["sweet", 1, 0.0]]],
+            [75.0, [["sweet", 1, 0.0], ["sweet", 1, 0.0]]],
+        ],
+    },
+
+    
+    3: {
+        "name": "1-3 Fire at the Border",
+        "subtitle": "Roasted Sweet Potatoes join the invasion. Boiled Potato resists fire.",
+        "available_units": ["potato", "boiled"],
+        "ally_base_hp": 1700,
+        "enemy_base_hp": 1200,
+        "waves": [
+            [4.0, [["sweet", 1, 0.0]]],
+            [9.0, [["sweet", 1, 0.0]]],
+            [14.0, [["roasted_sweet", 1, 0.0]]],
+            [20.0, [["sweet", 1, 0.0]]],
+            [25.0, [["sweet", 1, 0.0]]],
+            [31.0, [["roasted_sweet", 1, 0.0]]],
+            [37.0, [["sweet", 1, 0.0]]],
+            [42.0, [["sweet", 1, 0.0]]],
+            [48.0, [["roasted_sweet", 1, 0.0]]],
+            [54.0, [["sweet", 1, 0.0]]],
+            [59.0, [["sweet", 1, 0.0]]],
+            [65.0, [["roasted_sweet", 1, 0.0]]],
+            [71.0, [["sweet", 1, 0.0]]],
+        ],
+    },
+
+    
+    4: {
+        "name": "1-4 Blazing Border",
+        "subtitle": "Roasted Sweet Potatoes arrive more often and begin attacking in groups.",
+        "available_units": ["potato", "boiled"],
+        "ally_base_hp": 1750,
+        "enemy_base_hp": 1500,
+        "waves": [
+            [4.0, [["sweet", 1, 0.0]]],
+            [9.0, [["roasted_sweet", 1, 0.0]]],
+            [15.0, [["sweet", 1, 0.0]]],
+            [21.0, [["roasted_sweet", 1, 0.0], ["sweet", 1, 0.7]]],
+            [29.0, [["roasted_sweet", 2, 1.0]]],
+            [38.0, [["sweet", 2, 1.0]]],
+            [46.0, [["roasted_sweet", 1, 0.0], ["sweet", 1, 0.7]]],
+            [55.0, [["roasted_sweet", 2, 1.0]]],
+            [64.0, [["sweet", 2, 0.9], ["roasted_sweet", 1, 0.0]]],
+            [74.0, [["roasted_sweet", 2, 1.0], ["sweet", 1, 0.8]]],
+            [85.0, [["sweet", 2, 0.9], ["roasted_sweet", 1, 0.0]]],
+        ],
+    },
+
+    
+    5: {
+        "name": "1-5 Fried Route",
+        "subtitle": "Fast Sweet Fries enter the road battle, but only at a moderate pace.",
+        "available_units": ["potato", "boiled", "roasted"],
+        "ally_base_hp": 1800,
+        "enemy_base_hp": 1450,
+        "waves": [
+            [4.0, [["sweet", 1, 0.0]]],
+            [9.0, [["sweet_fries", 1, 0.0]]],
+            [14.0, [["sweet", 1, 0.0]]],
+            [19.0, [["sweet_fries", 1, 0.0]]],
+            [24.0, [["sweet", 1, 0.0]]],
+            [29.0, [["roasted_sweet", 1, 0.0]]],
+            [35.0, [["sweet_fries", 1, 0.0]]],
+            [40.0, [["sweet", 1, 0.0]]],
+            [45.0, [["sweet_fries", 1, 0.0]]],
+            [50.0, [["sweet", 1, 0.0]]],
+            [55.0, [["roasted_sweet", 1, 0.0]]],
+            [61.0, [["sweet_fries", 1, 0.0]]],
+            [66.0, [["sweet", 1, 0.0]]],
+            [71.0, [["sweet_fries", 1, 0.0]]],
+            [76.0, [["sweet", 1, 0.0]]],
+        ],
+        "reinforcement": {
+            "start": 83.0,
+            "interval": 7.0,
+            "patterns": [
+                [["sweet_fries", 1, 0.0]],
+                [["sweet", 1, 0.0]],
+                [["sweet_fries", 1, 0.0]],
+                [["sweet", 1, 0.0], ["sweet_fries", 1, 0.6]],
+            ],
+        },
+    },
+
+    
+    6: {
+        "name": "1-6 Fried Highway",
+        "subtitle": "Sweet Fries arrive faster, sometimes in pairs. Keep the front line stable.",
+        "available_units": ["potato", "boiled", "roasted"],
+        "ally_base_hp": 1850,
+        "enemy_base_hp": 1700,
+        "waves": [
+            [4.0, [["sweet", 1, 0.0]]],
+            [8.0, [["sweet_fries", 1, 0.0]]],
+            [12.0, [["sweet", 1, 0.0]]],
+            [16.0, [["sweet_fries", 1, 0.0]]],
+            [20.0, [["sweet_fries", 1, 0.0]]],
+            [24.0, [["sweet", 1, 0.0]]],
+            [29.0, [["sweet_fries", 2, 0.7]]],
+            [36.0, [["roasted_sweet", 1, 0.0]]],
+            [41.0, [["sweet_fries", 1, 0.0]]],
+            [45.0, [["sweet", 1, 0.0]]],
+            [49.0, [["sweet_fries", 2, 0.7]]],
+            [56.0, [["sweet", 1, 0.0]]],
+            [60.0, [["sweet_fries", 1, 0.0]]],
+            [64.0, [["sweet_fries", 2, 0.7]]],
+            [72.0, [["roasted_sweet", 1, 0.0], ["sweet_fries", 1, 0.6]]],
+            [81.0, [["sweet", 1, 0.0], ["sweet_fries", 2, 0.7]]],
+            [91.0, [["sweet_fries", 2, 0.7]]],
+        ],
+        "reinforcement": {
+            "start": 98.0,
+            "interval": 5.5,
+            "patterns": [
+                [["sweet_fries", 1, 0.0]],
+                [["sweet_fries", 2, 0.7]],
+                [["sweet", 1, 0.0], ["sweet_fries", 1, 0.6]],
+                [["sweet_fries", 1, 0.0]],
+            ],
+        },
+    },
+
+    
+    7: {
+        "name": "1-7 Sweet Armor",
+        "subtitle": "Mattang appears less often, but its shield makes each encounter dangerous.",
+        "available_units": ["potato", "boiled", "roasted", "fried"],
+        "ally_base_hp": 1900,
+        "enemy_base_hp": 1850,
+        "waves": [
+            [4.0, [["sweet", 1, 0.0]]],
+            [10.0, [["sweet", 1, 0.0]]],
+            [16.0, [["roasted_sweet", 1, 0.0]]],
+            [24.0, [["sweet", 2, 1.0]]],
+            [32.0, [["sweet_fries", 2, 0.8]]],
+            [44.0, [["mattang", 1, 0.0], ["sweet", 1, 0.0]]],
+            [56.0, [["roasted_sweet", 1, 0.0], ["sweet", 2, 1.0]]],
+            [68.0, [["sweet_fries", 2, 0.8]]],
+            [80.0, [["mattang", 1, 0.0], ["sweet", 1, 0.0]]],
+            [92.0, [["sweet", 3, 0.9]]],
+        ],
+        "reinforcement": {
+            "start": 105.0,
+            "interval": 14.0,
+            "patterns": [
+                [["sweet", 2, 0.8]],
+                [["sweet_fries", 2, 0.7]],
+                [["roasted_sweet", 1, 0.0], ["sweet", 1, 0.6]],
+                [["mattang", 1, 0.0], ["sweet", 1, 0.8]],
+            ],
+        },
+    },
+
+    
+    8: {
+        "name": "1-8 Triple Sweet Trouble",
+        "subtitle": "One Mattang attacks at 30s, 60s, and 90s. Break each shield carefully.",
+        "available_units": ["potato", "boiled", "roasted", "fried"],
+        "ally_base_hp": 2000,
+        "enemy_base_hp": 2200,
+        "waves": [
+            [4.0, [["sweet", 1, 0.0]]],
+            [10.0, [["sweet", 1, 0.0]]],
+            [16.0, [["roasted_sweet", 1, 0.0]]],
+            [24.0, [["sweet_fries", 2, 0.8]]],
+            [30.0, [["mattang", 1, 0.0]]],
+            [49.0, [["sweet", 3, 0.9]]],
+            [59.0, [["roasted_sweet", 1, 0.0], ["sweet_fries", 2, 0.7]]],
+            [60.0, [["mattang", 1, 0.0]]],
+            [69.0, [["sweet", 2, 0.9]]],
+            [90.0, [["mattang", 1, 0.0]]],
+            [94.0, [["sweet_fries", 3, 0.7]]],
+            [107.0, [["roasted_sweet", 1, 0.0], ["sweet", 2, 0.8]]],
+        ],
+        "reinforcement": {
+            "start": 122.0,
+            "interval": 15.0,
+            "patterns": [
+                [["sweet", 3, 0.8]],
+                [["sweet_fries", 3, 0.7]],
+                [["roasted_sweet", 1, 0.0], ["sweet", 2, 0.8]],
+                [["mattang", 1, 0.0], ["sweet", 1, 0.8]],
+            ],
+        },
+    },
+
+    
+    9: {
+        "name": "1-9 First Defense of Potato Castle",
+        "subtitle": "A weaker General Goguma leads a light assault. Learn the boss rhythm.",
+        "available_units": ["potato", "boiled", "roasted", "fried"],
+        "ally_base_hp": 2100,
+        "enemy_base_hp": 2100,
+        "waves": [
+            [4.0, [["sweet", 1, 0.0]]],
+            [10.0, [["sweet", 1, 0.0]]],
+            [16.0, [["roasted_sweet", 1, 0.0]]],
+            [24.0, [["sweet", 2, 1.0]]],
+            [32.0, [["sweet_fries", 2, 0.7]]],
+            [41.0, [["sweet", 2, 0.9]]],
+            [50.0, [["mattang", 1, 0.0], ["sweet", 1, 0.8]]],
+            [60.0, [["roasted_sweet", 1, 0.0], ["sweet_fries", 1, 0.6]]],
+        ],
+        "boss_spawn_time": 70.0,
+        "boss_trigger_hp_ratio": 0.50,
+        "boss_enemy_key": "boss",
+        "requires_boss_defeat": true,
+        "reinforcement": {
+            "start_after_boss": 10.0,
+            "interval": 15.0,
+            "requires_boss_spawned": true,
+            "stop_when_boss_dead": true,
+            "patterns": [
+                [["sweet", 1, 0.0]],
+                [["sweet_fries", 1, 0.0]],
+                [["sweet", 1, 0.0], ["sweet_fries", 1, 0.7]],
+            ],
+        },
+        "post_boss_reinforcement": {
+            "start_delay": 6.0,
+            "interval": 10.0,
+            "pattern": [["sweet", 1, 0.0]],
+        },
+    },
+
+    
+    10: {
+        "name": "1-10 Second Defense of Potato Castle",
+        "subtitle": "Defeat the General, survive reinforcements, then break the enemy castle.",
+        "available_units": ["potato", "boiled", "roasted", "fried"],
+        "ally_base_hp": 2200,
+        "enemy_base_hp": 2300,
+        "waves": [
+            [4.0, [["sweet", 1, 0.0]]],
+            [9.0, [["sweet", 1, 0.0]]],
+            [15.0, [["roasted_sweet", 1, 0.0]]],
+            [22.0, [["sweet", 2, 1.0]]],
+            [30.0, [["sweet_fries", 2, 0.7]]],
+            [38.0, [["mattang", 1, 0.0], ["sweet", 2, 0.9]]],
+            [50.0, [["roasted_sweet", 1, 0.0], ["sweet_fries", 2, 0.7]]],
+            [61.0, [["mattang", 1, 0.0], ["sweet", 3, 0.8]]],
+        ],
+        "boss_spawn_time": 73.0,
+        "boss_trigger_hp_ratio": 0.50,
+        "boss_enemy_key": "boss",
+        "requires_boss_defeat": true,
+        "reinforcement": {
+            "start_after_boss": 8.0,
+            "interval": 12.0,
+            "requires_boss_spawned": true,
+            "stop_when_boss_dead": true,
+            "patterns": [
+                [["sweet_fries", 1, 0.0]],
+                [["sweet", 1, 0.0], ["sweet_fries", 1, 0.7]],
+                [["sweet_fries", 2, 0.8]],
+                [["sweet", 1, 0.0]],
+                [["sweet_fries", 1, 0.0]],
+                [["mattang", 1, 0.0]],
+            ],
+        },
+        "post_boss_reinforcement": {
+            "start_delay": 5.0,
+            "interval": 12.0,
+            "pattern": [["sweet", 1, 0.0], ["sweet_fries", 1, 0.7]],
+        },
+    },
+},2:{
+    1: {
+        "name": "2-1 Arrows Beyond the Ridge",
+        "subtitle": "Sweet Archers attack from afar while familiar troops screen their advance.",
+        "available_units": ["potato", "boiled", "roasted", "fried", "sprout_archer"],
+        "ally_base_hp": 2200,
+        "enemy_base_hp": 1900,
+        "waves": [
+            [4.0, [["sweet", 1, 0.0]]],
+            [10.0, [["sweet_archer", 1, 0.0]]],
+            [17.0, [["sweet_fries", 1, 0.0]]],
+            [24.0, [["sweet", 1, 0.0], ["sweet_archer", 1, 0.8]]],
+            [32.0, [["sweet_fries", 1, 0.0], ["sweet", 1, 0.7]]],
+            [41.0, [["sweet_archer", 1, 0.0], ["sweet", 1, 0.7]]],
+            [51.0, [["sweet_fries", 2, 0.8]]],
+            [62.0, [["sweet", 2, 0.8], ["sweet_archer", 1, 0.8]]],
+            [75.0, [["roasted_sweet", 1, 0.0], ["sweet_archer", 1, 0.8]]],
+        ],
+    },
+    2: {
+        "name": "2-2 Rain of Purple Arrows",
+        "subtitle": "Archers fire behind mixed screens of Fries, basic troops, and one heavy Mattang.",
+        "available_units": ["potato", "boiled", "roasted", "fried", "sprout_archer"],
+        "ally_base_hp": 2250,
+        "enemy_base_hp": 2200,
+        "waves": [
+            [4.0, [["sweet_archer", 1, 0.0]]],
+            [10.0, [["sweet_fries", 1, 0.0]]],
+            [17.0, [["sweet", 1, 0.0], ["sweet_archer", 1, 0.8]]],
+            [26.0, [["sweet_fries", 2, 0.8]]],
+            [36.0, [["sweet", 2, 0.8], ["sweet_archer", 1, 0.8]]],
+            [48.0, [["roasted_sweet", 1, 0.0], ["sweet_archer", 1, 0.8]]],
+            [61.0, [["sweet_fries", 1, 0.0], ["sweet_archer", 2, 1.0]]],
+            [76.0, [["mattang", 1, 0.0], ["sweet_archer", 1, 1.0]]],
+        ],
+        "reinforcement": {
+            "start": 93.0,
+            "interval": 11.0,
+            "patterns": [
+                [["sweet_fries", 1, 0.0]],
+                [["sweet", 1, 0.0], ["sweet_archer", 1, 0.8]],
+                [["sweet_fries", 1, 0.0], ["sweet_archer", 1, 0.8]],
+            ],
+        },
+    },
+    3: {
+        "name": "2-3 Violet Charge",
+        "subtitle": "Sweet Rammers burst through screens of Fries and basic troops.",
+        "available_units": ["potato", "boiled", "roasted", "fried", "sprout_archer", "stone_guard"],
+        "ally_base_hp": 2350,
+        "enemy_base_hp": 2250,
+        "waves": [
+            [4.0, [["sweet", 1, 0.0]]],
+            [11.0, [["sweet_rammer", 1, 0.0]]],
+            [18.0, [["sweet_fries", 1, 0.0]]],
+            [25.0, [["sweet_rammer", 1, 0.0]]],
+            [33.0, [["sweet_fries", 2, 0.8]]],
+            [42.0, [["sweet_rammer", 1, 0.0], ["sweet", 1, 0.7]]],
+            [52.0, [["sweet_archer", 1, 0.0], ["sweet_rammer", 1, 0.7]]],
+            [64.0, [["sweet_fries", 1, 0.0], ["sweet_rammer", 2, 0.8]]],
+            [78.0, [["roasted_sweet", 1, 0.0], ["sweet_rammer", 1, 0.7]]],
+        ],
+    },
+    4: {
+        "name": "2-4 The Unbroken Charge",
+        "subtitle": "Rammers attack around heavy Mattang walls while Fries fund the counterattack.",
+        "available_units": ["potato", "boiled", "roasted", "fried", "sprout_archer", "stone_guard"],
+        "ally_base_hp": 2400,
+        "enemy_base_hp": 2500,
+        "waves": [
+            [4.0, [["sweet_rammer", 1, 0.0]]],
+            [11.0, [["sweet_fries", 1, 0.0]]],
+            [19.0, [["sweet_rammer", 2, 0.8]]],
+            [29.0, [["sweet_archer", 1, 0.0], ["sweet_rammer", 1, 0.6]]],
+            [40.0, [["mattang", 1, 0.0], ["sweet_rammer", 1, 0.9]]],
+            [53.0, [["sweet_fries", 2, 0.8], ["sweet_rammer", 1, 0.7]]],
+            [67.0, [["roasted_sweet", 1, 0.0], ["sweet_rammer", 2, 0.8]]],
+            [83.0, [["sweet_archer", 1, 0.0], ["sweet_rammer", 2, 0.8], ["sweet_fries", 1, 0.7]]],
+            [99.0, [["mattang", 1, 0.0], ["sweet_rammer", 1, 0.9]]],
+        ],
+        "reinforcement": {
+            "start": 116.0,
+            "interval": 11.0,
+            "patterns": [
+                [["sweet_fries", 1, 0.0]],
+                [["sweet_rammer", 1, 0.0]],
+                [["sweet_fries", 1, 0.0], ["sweet_rammer", 1, 0.7]],
+            ],
+        },
+    },
+    5: {
+        "name": "2-5 Hymn of Recovery",
+        "subtitle": "Sweet Priests heal familiar front-line troops. Break the screen and reach the healer.",
+        "available_units": ["potato", "boiled", "roasted", "fried", "sprout_archer", "stone_guard", "seed_medic"],
+        "ally_base_hp": 2500,
+        "enemy_base_hp": 2550,
+        "waves": [
+            [4.0, [["sweet_fries", 1, 0.0]]],
+            [11.0, [["sweet_archer", 1, 0.0]]],
+            [19.0, [["sweet_priest", 1, 0.0], ["sweet", 1, 0.8]]],
+            [30.0, [["sweet_rammer", 1, 0.0]]],
+            [40.0, [["sweet_priest", 1, 0.0], ["sweet_fries", 1, 0.8]]],
+            [52.0, [["roasted_sweet", 1, 0.0], ["sweet_priest", 1, 0.0]]],
+            [66.0, [["sweet_archer", 1, 0.0], ["sweet", 1, 0.7], ["sweet_priest", 1, 0.0]]],
+            [81.0, [["mattang", 1, 0.0], ["sweet_priest", 1, 1.0]]],
+        ],
+    },
+    6: {
+        "name": "2-6 March of the Choir",
+        "subtitle": "Priests rotate behind mixed squads, but never overlap in overwhelming numbers.",
+        "available_units": ["potato", "boiled", "roasted", "fried", "sprout_archer", "stone_guard", "seed_medic"],
+        "ally_base_hp": 2550,
+        "enemy_base_hp": 2850,
+        "waves": [
+            [4.0, [["sweet_fries", 2, 0.8]]],
+            [14.0, [["sweet_priest", 1, 0.0], ["sweet", 1, 0.8]]],
+            [29.0, [["sweet_rammer", 1, 0.0], ["sweet_priest", 1, 0.0]]],
+            [44.0, [["sweet_archer", 1, 0.0], ["sweet_fries", 1, 0.7]]],
+            [59.0, [["roasted_sweet", 1, 0.0], ["sweet_priest", 1, 0.0]]],
+            [75.0, [["sweet_rammer", 1, 0.0], ["sweet_archer", 1, 0.7]]],
+            [90.0, [["mattang", 1, 0.0], ["sweet_priest", 1, 1.0]]],
+            [108.0, [["sweet_fries", 2, 0.8], ["sweet_archer", 1, 0.7]]],
+        ],
+        "reinforcement": {
+            "start": 126.0,
+            "interval": 16.0,
+            "patterns": [
+                [["sweet_fries", 2, 0.8]],
+                [["sweet_rammer", 1, 0.0], ["sweet_priest", 1, 0.0]],
+                [["sweet_archer", 1, 0.0], ["sweet", 1, 0.7]],
+                [["roasted_sweet", 1, 0.0], ["sweet_priest", 1, 0.0]],
+            ],
+        },
+    },
+    7: {
+        "name": "2-7 Starch Under Bombardment",
+        "subtitle": "Sweet Bombers enter behind old front-line troops. Starch Cannon answers with area fire.",
+        "available_units": ["potato", "boiled", "roasted", "fried", "sprout_archer", "stone_guard", "seed_medic", "starch_cannon"],
+        "ally_base_hp": 2650,
+        "enemy_base_hp": 2900,
+        "waves": [
+            [4.0, [["sweet_fries", 1, 0.0]]],
+            [11.0, [["sweet_bomber", 1, 0.0]]],
+            [21.0, [["sweet", 2, 0.8]]],
+            [31.0, [["sweet_bomber", 1, 0.0], ["sweet", 1, 0.8]]],
+            [43.0, [["sweet_archer", 1, 0.0], ["sweet_fries", 2, 0.8]]],
+            [56.0, [["mattang", 1, 0.0], ["sweet_bomber", 1, 1.0]]],
+            [70.0, [["sweet_rammer", 1, 0.0], ["sweet_fries", 2, 0.8]]],
+            [85.0, [["sweet_priest", 1, 0.0], ["sweet_bomber", 1, 0.0], ["sweet", 1, 0.7]]],
+            [101.0, [["roasted_sweet", 1, 0.0], ["sweet_bomber", 1, 0.9]]],
+        ],
+    },
+    8: {
+        "name": "2-8 Burning Artillery Line",
+        "subtitle": "Bombers appear as occasional artillery support inside mixed Imperial formations.",
+        "available_units": ["potato", "boiled", "roasted", "fried", "sprout_archer", "stone_guard", "seed_medic", "starch_cannon"],
+        "ally_base_hp": 2750,
+        "enemy_base_hp": 3300,
+        "waves": [
+            [4.0, [["sweet_fries", 2, 0.8]]],
+            [12.0, [["sweet_rammer", 1, 0.0]]],
+            [21.0, [["sweet_bomber", 1, 0.0], ["sweet", 1, 0.8]]],
+            [33.0, [["sweet_archer", 1, 0.0], ["sweet_fries", 2, 0.8]]],
+            [46.0, [["mattang", 1, 0.0], ["sweet_rammer", 1, 0.9]]],
+            [60.0, [["sweet_bomber", 1, 0.0], ["sweet_archer", 1, 0.8]]],
+            [75.0, [["sweet_priest", 1, 0.0], ["roasted_sweet", 1, 0.0], ["sweet_fries", 1, 0.7]]],
+            [91.0, [["mattang", 1, 0.0], ["sweet_bomber", 1, 1.0]]],
+            [108.0, [["sweet_rammer", 1, 0.0], ["sweet_archer", 1, 0.7], ["sweet_fries", 2, 0.8]]],
+        ],
+        "reinforcement": {
+            "start": 128.0,
+            "interval": 15.0,
+            "patterns": [
+                [["sweet_fries", 2, 0.8]],
+                [["sweet_archer", 1, 0.0], ["sweet", 2, 0.8]],
+                [["sweet_bomber", 1, 0.0], ["sweet", 1, 0.8]],
+                [["sweet_rammer", 1, 0.0], ["sweet_priest", 1, 0.0]],
+                [["mattang", 1, 0.0], ["sweet_fries", 1, 0.9]],
+            ],
+        },
+    },
+    9: {
+        "name": "2-9 Vanguard of the Grand General",
+        "subtitle": "The Grand General commands veterans from Chapter 1 alongside the new Imperial corps.",
+        "available_units": ["potato", "boiled", "roasted", "fried", "sprout_archer", "stone_guard", "seed_medic", "starch_cannon"],
+        "ally_base_hp": 2900,
+        "enemy_base_hp": 3400,
+        "waves": [
+            [4.0, [["sweet_fries", 1, 0.0]]],
+            [11.0, [["sweet_archer", 1, 0.0]]],
+            [20.0, [["sweet_rammer", 1, 0.0]]],
+            [30.0, [["mattang", 1, 0.0]]],
+            [42.0, [["sweet_priest", 1, 0.0], ["roasted_sweet", 1, 0.0]]],
+            [55.0, [["sweet_bomber", 1, 0.0], ["sweet_fries", 2, 0.8]]],
+            [68.0, [["sweet_archer", 1, 0.0], ["sweet_rammer", 1, 0.7]]],
+        ],
+        "boss_spawn_time": 80.0,
+        "boss_trigger_hp_ratio": 0.45,
+        "boss_enemy_key": "grand_general",
+        "requires_boss_defeat": true,
+        "reinforcement": {
+            "start_after_boss": 10.0,
+            "interval": 16.0,
+            "requires_boss_spawned": true,
+            "stop_when_boss_dead": true,
+            "patterns": [
+                [["sweet_fries", 2, 0.8]],
+                [["sweet_archer", 1, 0.0], ["sweet", 1, 0.7]],
+                [["sweet_rammer", 1, 0.0]],
+                [["mattang", 1, 0.0]],
+                [["sweet_priest", 1, 0.0], ["roasted_sweet", 1, 0.0]],
+                [["sweet_bomber", 1, 0.0], ["sweet_fries", 1, 0.8]],
+            ],
+        },
+        "post_boss_reinforcement": {
+            "start_delay": 6.0,
+            "interval": 13.0,
+            "pattern": [["sweet", 1, 0.0], ["sweet_fries", 1, 0.7]],
+        },
+    },
+    10: {
+        "name": "2-10 Total Assault of the Empire",
+        "subtitle": "Every old and new Sweet Potato unit joins the final Imperial assault.",
+        "available_units": ["potato", "boiled", "roasted", "fried", "sprout_archer", "stone_guard", "seed_medic", "starch_cannon"],
+        "ally_base_hp": 3100,
+        "enemy_base_hp": 3900,
+        "waves": [
+            [4.0, [["sweet_fries", 1, 0.0]]],
+            [11.0, [["sweet_archer", 1, 0.0]]],
+            [19.0, [["sweet_rammer", 1, 0.0]]],
+            [28.0, [["mattang", 1, 0.0], ["sweet_fries", 1, 0.9]]],
+            [40.0, [["sweet_priest", 1, 0.0], ["roasted_sweet", 1, 0.0]]],
+            [52.0, [["sweet_bomber", 1, 0.0], ["sweet", 2, 0.8]]],
+            [65.0, [["sweet_archer", 1, 0.0], ["sweet_rammer", 1, 0.7], ["sweet_fries", 1, 0.7]]],
+            [78.0, [["mattang", 1, 0.0], ["sweet_priest", 1, 1.0]]],
+        ],
+        "boss_spawn_time": 90.0,
+        "boss_trigger_hp_ratio": 0.45,
+        "boss_enemy_key": "grand_general",
+        "requires_boss_defeat": true,
+        "reinforcement": {
+            "start_after_boss": 9.0,
+            "interval": 14.0,
+            "requires_boss_spawned": true,
+            "stop_when_boss_dead": true,
+            "patterns": [
+                [["sweet_fries", 2, 0.8]],
+                [["sweet_archer", 1, 0.0], ["sweet", 1, 0.7]],
+                [["sweet_rammer", 1, 0.0], ["sweet_fries", 1, 0.7]],
+                [["mattang", 1, 0.0]],
+                [["sweet_priest", 1, 0.0], ["roasted_sweet", 1, 0.0]],
+                [["sweet_bomber", 1, 0.0], ["sweet", 1, 0.8]],
+            ],
+        },
+        "post_boss_reinforcement": {
+            "start_delay": 6.0,
+            "interval": 15.0,
+            "pattern": [["sweet", 1, 0.0], ["sweet_fries", 1, 0.7]],
+        },
+    },
+},3:{
+    1: {
+        "name": "3-1 First Step into the Empire",
+        "subtitle": "The counterattack begins. Shieldbearer joins the Potato army.",
+        "available_units": ["potato", "boiled", "roasted", "fried", "sprout_archer", "stone_guard", "seed_medic", "starch_cannon", "shieldbearer"],
+        "ally_base_hp": 2100, "enemy_base_hp": 1750,
+        "waves": [
+            [4.0, [["sweet", 1, 0.0]]], [9.0, [["sweet_fries", 1, 0.0]]],
+            [14.0, [["sweet", 1, 0.0]]], [19.0, [["sweet_fries", 1, 0.0]]],
+            [25.0, [["sweet", 2, 0.7], ["roasted_sweet", 1, 0.0]]],
+            [37.0, [["sweet", 2, 0.7], ["roasted_sweet", 1, 0.0]]],
+            [49.0, [["sweet", 2, 0.7], ["roasted_sweet", 1, 0.0]]],
+            [61.0, [["sweet", 2, 0.7], ["roasted_sweet", 1, 0.0]]],
+        ],
+        "base_first_hit_event": {
+            "knockback": 30,
+            "spawn": [["roasted_sweet", 4, 0.6], ["sweet_archer", 1, 0.0]],
+            "start_reinforcement": {"tag": "post_hit", "start_delay": 6.0, "interval": 6.5, "patterns": [[["sweet", 1, 0.0]]]},
+        },
+    },
+    2: {
+        "name": "3-2 Outer Wall of the Empire",
+        "subtitle": "Break through a layered imperial defense line.",
+        "available_units": ["potato", "boiled", "roasted", "fried", "sprout_archer", "stone_guard", "seed_medic", "starch_cannon", "shieldbearer"],
+        "ally_base_hp": 2150, "enemy_base_hp": 1850,
+        "waves": [[2.0, [["roasted_sweet", 1, 0.0], ["sweet_rammer", 1, 0.0], ["sweet_archer", 1, 0.0]]]],
+        "initial_event_reinforcement": {"tag": "opening", "start_delay": 7.0, "interval": 5.5, "patterns": [[["sweet_fries", 1, 0.0]]]},
+        "base_first_hit_event": {
+            "knockback": 30, "stop_reinforcement_tags": ["opening"],
+            "spawn": [["mattang", 1, 0.0], ["sweet_priest", 1, 0.0], ["sweet_mauler", 1, 0.0]],
+            "start_reinforcement": {"tag": "post_hit", "start_delay": 7.0, "interval": 7.0, "patterns": [[["sweet_rammer", 1, 0.0]]]},
+        },
+    },
+    3: {
+        "name": "3-3 Road of Gunpowder",
+        "subtitle": "A Mattang screen protects imperial artillery.",
+        "available_units": ["potato", "boiled", "roasted", "fried", "sprout_archer", "stone_guard", "seed_medic", "starch_cannon", "shieldbearer"],
+        "ally_base_hp": 2200, "enemy_base_hp": 1900,
+        "waves": [
+            [4.0, [["sweet", 1, 0.0]]], [9.0, [["sweet", 1, 0.0], ["sweet_fries", 1, 0.0]]],
+            [15.0, [["sweet", 1, 0.0]]], [20.0, [["sweet", 1, 0.0], ["sweet_fries", 1, 0.0]]],
+            [26.0, [["sweet", 1, 0.0]]], [31.0, [["sweet", 1, 0.0], ["sweet_fries", 1, 0.0]]],
+        ],
+        "base_first_hit_event": {
+            "knockback": 50,
+            "spawn": [["mattang", 1, 0.0], ["sweet_bomber", 1, 0.0]],
+            "start_reinforcement": {"tag": "post_hit", "start_delay": 8.0, "interval": 9.0, "patterns": [[["sweet_rammer", 1, 0.0], ["sweet_mauler", 1, 0.6]]]},
+        },
+    },
+    4: {
+        "name": "3-4 The First War Drums",
+        "subtitle": "Potato Charger joins the attack, but the empire answers with drums.",
+        "available_units": ["potato", "boiled", "roasted", "fried", "sprout_archer", "stone_guard", "seed_medic", "starch_cannon", "shieldbearer", "potato_charger"],
+        "ally_base_hp": 2250, "enemy_base_hp": 2000,
+        "waves": [
+            [4.0, [["sweet", 1, 0.0]]], [9.0, [["sweet_fries", 1, 0.0]]],
+            [14.0, [["sweet", 1, 0.0]]], [19.0, [["sweet_fries", 1, 0.0]]],
+            [25.0, [["sweet", 2, 0.7], ["roasted_sweet", 1, 0.0]]],
+            [37.0, [["sweet", 2, 0.7], ["roasted_sweet", 1, 0.0]]],
+            [49.0, [["sweet", 2, 0.7], ["roasted_sweet", 1, 0.0]]],
+        ],
+        "base_first_hit_event": {
+            "knockback": 30,
+            "spawn": [["roasted_sweet", 4, 0.6], ["sweet_archer", 1, 0.0]],
+            "delayed_spawns": [[2.0, [["sweet_drummer", 1, 0.0]]]],
+            "start_reinforcement": {"tag": "post_hit", "start_delay": 6.0, "interval": 6.5, "patterns": [[["sweet", 1, 0.0]]]},
+        },
+    },
+    5: {
+        "name": "3-5 Rhythm of the March",
+        "subtitle": "The outer wall defense returns with a War Drummer behind it.",
+        "available_units": ["potato", "boiled", "roasted", "fried", "sprout_archer", "stone_guard", "seed_medic", "starch_cannon", "shieldbearer", "potato_charger"],
+        "ally_base_hp": 2300, "enemy_base_hp": 2100,
+        "waves": [[2.0, [["roasted_sweet", 1, 0.0], ["sweet_rammer", 1, 0.0], ["sweet_archer", 1, 0.0]]]],
+        "initial_event_reinforcement": {"tag": "opening", "start_delay": 7.0, "interval": 5.5, "patterns": [[["sweet_fries", 1, 0.0]]]},
+        "base_first_hit_event": {
+            "knockback": 30, "stop_reinforcement_tags": ["opening"],
+            "spawn": [["mattang", 1, 0.0], ["sweet_priest", 1, 0.0], ["sweet_mauler", 1, 0.0]],
+            "delayed_spawns": [[2.0, [["sweet_drummer", 1, 0.0]]]],
+            "start_reinforcement": {"tag": "post_hit", "start_delay": 7.0, "interval": 7.0, "patterns": [[["sweet_rammer", 1, 0.0]]]},
+        },
+    },
+    6: {
+        "name": "3-6 Resounding Defense Line",
+        "subtitle": "Artillery, Maulers and War Drums hold the inner road.",
+        "available_units": ["potato", "boiled", "roasted", "fried", "sprout_archer", "stone_guard", "seed_medic", "starch_cannon", "shieldbearer", "potato_charger"],
+        "ally_base_hp": 2350, "enemy_base_hp": 2200,
+        "waves": [
+            [4.0, [["sweet", 1, 0.0]]], [9.0, [["sweet", 1, 0.0], ["sweet_fries", 1, 0.0]]],
+            [15.0, [["sweet", 1, 0.0]]], [20.0, [["sweet", 1, 0.0], ["sweet_fries", 1, 0.0]]],
+            [26.0, [["sweet", 1, 0.0]]], [31.0, [["sweet", 1, 0.0], ["sweet_fries", 1, 0.0]]],
+        ],
+        "base_first_hit_event": {
+            "knockback": 50,
+            "spawn": [["mattang", 1, 0.0], ["sweet_bomber", 1, 0.0]],
+            "delayed_spawns": [[2.0, [["sweet_drummer", 1, 0.0]]]],
+            "start_reinforcement": {"tag": "post_hit", "start_delay": 8.0, "interval": 9.0, "patterns": [
+                [["sweet_rammer", 1, 0.0], ["sweet_fries", 2, 0.5]],
+                [["sweet", 1, 0.0], ["sweet_mauler", 1, 0.6]],
+            ]},
+        },
+    },
+    7: {
+        "name": "3-7 Imperial Mixed Guard",
+        "subtitle": "The empire rotates layered squads before a fortified counterattack.",
+        "available_units": ["potato", "boiled", "roasted", "fried", "sprout_archer", "stone_guard", "seed_medic", "starch_cannon", "shieldbearer", "potato_charger"],
+        "ally_base_hp": 2400, "enemy_base_hp": 2300,
+        "waves": [
+            [4.0, [["sweet", 2, 0.6], ["sweet_fries", 1, 0.0]]],
+            [10.0, [["sweet", 1, 0.0], ["sweet_fries", 2, 0.5]]],
+            [16.0, [["sweet", 2, 0.6], ["sweet_fries", 1, 0.0]]],
+            [22.0, [["sweet", 1, 0.0], ["sweet_fries", 2, 0.5]]],
+            [31.0, [["sweet", 1, 0.0], ["roasted_sweet", 1, 0.0]]],
+            [39.0, [["sweet", 1, 0.0], ["sweet_archer", 1, 0.0]]],
+            [47.0, [["sweet", 1, 0.0], ["roasted_sweet", 1, 0.0]]],
+            [55.0, [["sweet", 1, 0.0], ["sweet_archer", 1, 0.0]]],
+        ],
+        "base_first_hit_event": {
+            "knockback": 40,
+            "spawn": [["mattang", 1, 0.0], ["sweet_priest", 1, 0.0], ["sweet_drummer", 1, 0.0]],
+            "start_reinforcement": {"tag": "post_hit", "start_delay": 8.0, "interval": 9.0, "patterns": [
+                [["roasted_sweet", 1, 0.0], ["sweet_fries", 2, 0.5]],
+                [["sweet", 4, 0.5]],
+                [["sweet_mauler", 1, 0.0]],
+            ]},
+        },
+    },
+    8: {
+        "name": "3-8 The General Strikes Back",
+        "subtitle": "General Goguma leads a mobile counterattack from the imperial road.",
+        "available_units": ["potato", "boiled", "roasted", "fried", "sprout_archer", "stone_guard", "seed_medic", "starch_cannon", "shieldbearer", "potato_charger"],
+        "ally_base_hp": 2450, "enemy_base_hp": 2400,
+        "waves": [
+            [4.0, [["sweet", 2, 0.6], ["sweet_fries", 1, 0.0]]],
+            [10.0, [["sweet", 1, 0.0], ["sweet_fries", 2, 0.5]]],
+            [16.0, [["sweet", 2, 0.6], ["sweet_fries", 1, 0.0]]],
+            [22.0, [["sweet", 1, 0.0], ["sweet_fries", 2, 0.5]]],
+            [31.0, [["sweet", 1, 0.0], ["roasted_sweet", 1, 0.0]]],
+            [39.0, [["sweet", 1, 0.0], ["sweet_archer", 1, 0.0]]],
+            [47.0, [["sweet", 1, 0.0], ["roasted_sweet", 1, 0.0]]],
+            [55.0, [["sweet", 1, 0.0], ["sweet_archer", 1, 0.0]]],
+        ],
+        "base_first_hit_event": {
+            "boss_spawn": "boss",
+            "spawn": [["sweet_rammer", 3, 0.5], ["sweet_priest", 1, 0.0]],
+            "start_reinforcement": {"tag": "post_hit", "start_delay": 9.0, "interval": 10.0, "patterns": [[["sweet", 2, 0.6], ["roasted_sweet", 1, 0.0]]]},
+        },
+        "victory_requires_no_boss": true, "victory_requires_event": "base_first_hit",
+    },
+    9: {
+        "name": "3-9 Gate of the Grand General",
+        "subtitle": "Defeat the first guard, then break the Grand General's gate defense.",
+        "available_units": ["potato", "boiled", "roasted", "fried", "sprout_archer", "stone_guard", "seed_medic", "starch_cannon", "shieldbearer", "potato_charger"],
+        "ally_base_hp": 2500, "enemy_base_hp": 2500,
+        "waves": [[2.0, [["roasted_sweet", 1, 0.0]]]],
+        "clear_field_event": {
+            "name": "first_guard_defeated", "min_defeats": 1,
+            "spawn": [["mattang", 1, 0.0], ["sweet_drummer", 1, 0.0]],
+            "start_reinforcement": {"tag": "opening", "start_delay": 6.0, "interval": 7.5, "patterns": [[["sweet_fries", 2, 0.5]]]},
+        },
+        "base_first_hit_event": {
+            "stop_reinforcement_tags": ["opening"], "boss_spawn": "grand_general",
+            "spawn": [["sweet_mauler", 2, 0.7], ["sweet_drummer", 1, 0.0]],
+            "start_reinforcement": {"tag": "post_hit", "start_delay": 9.0, "interval": 9.0, "patterns": [[["sweet_fries", 1, 0.0], ["sweet_archer", 1, 0.6]]]},
+        },
+        "victory_requires_no_boss": true, "victory_requires_event": "base_first_hit",
+    },
+    10: {
+        "name": "3-10 Heart of the Sweet Potato Empire",
+        "subtitle": "A two-phase final assault against both General and Grand General.",
+        "available_units": ["potato", "boiled", "roasted", "fried", "sprout_archer", "stone_guard", "seed_medic", "starch_cannon", "shieldbearer", "potato_charger"],
+        "ally_base_hp": 2700, "enemy_base_hp": 3000,
+        "waves": [[2.0, [["sweet_rammer", 1, 0.0]]]],
+        "initial_event_reinforcement": {"tag": "opening", "start_delay": 8.0, "interval": 8.0, "patterns": [[["sweet", 1, 0.0], ["sweet_fries", 1, 0.5], ["sweet_archer", 1, 0.5]]]},
+        "base_first_hit_event": {
+            "stop_reinforcement_tags": ["opening"], "boss_spawn": "boss",
+            "start_reinforcement": {"tag": "general_phase", "start_delay": 8.0, "interval": 8.5, "patterns": [
+                [["sweet", 1, 0.0], ["sweet_fries", 2, 0.5]],
+                [["sweet_fries", 1, 0.0], ["sweet_archer", 1, 0.6]],
+            ]},
+        },
+        "base_hp_ratio_events": [
+            {"name": "grand_general_phase", "ratio": 0.30,
+             "stop_reinforcement_tags": ["general_phase"], "boss_spawn": "grand_general",
+             "spawn": [["sweet_rammer", 1, 0.0], ["sweet_fries", 3, 0.5]],
+             "delayed_spawns": [[3.0, [["sweet_priest", 1, 0.0], ["sweet_drummer", 1, 0.0]]]],
+             "start_reinforcement": {"tag": "grand_phase", "start_delay": 8.0, "interval": 8.5, "patterns": [[["sweet", 1, 0.0], ["roasted_sweet", 1, 0.5], ["sweet_fries", 1, 0.5]]]}},
+        ],
+        "boss_defeat_events": {
+            "boss": {
+                "name": "general_defeated",
+                "start_reinforcement": {
+                    "tag": "post_general",
+                    "start_delay": 3.0,
+                    "interval": 8.5,
+                    "patterns": [[["sweet", 1, 0.0], ["roasted_sweet", 1, 0.5], ["sweet_fries", 1, 0.5]]],
+                },
+            },
+            "grand_general": {"name": "grand_general_defeated", "delayed_spawns": [[3.0, [["mattang", 1, 0.0], ["sweet_archer", 3, 0.5]]]]},
+        },
+        "victory_requires_no_boss": true, "victory_requires_event": "grand_general_phase",
+    },
+},101:{
+    1: {
+        "name": "Angry Sweet Potato Crowd 1",
+        "subtitle": "Basic and roasted Sweet Potatoes advance in manageable crowds.",
+        "available_units": ["potato","boiled","roasted","fried","sprout_archer","stone_guard","seed_medic","starch_cannon","shieldbearer","potato_charger"],
+        "ally_base_hp": 2200,
+        "enemy_base_hp": 1500,
+        "waves": [
+            [4.0, [["sweet", 1, 0.0]]],
+            [11.0, [["sweet", 2, 0.55]]],
+            [19.0, [["roasted_sweet", 1, 0.0], ["sweet", 1, 0.5]]],
+            [28.0, [["sweet", 3, 0.5]]],
+            [38.0, [["roasted_sweet", 1, 0.0], ["sweet", 2, 0.5]]],
+            [49.0, [["sweet", 3, 0.45]]],
+            [61.0, [["roasted_sweet", 1, 0.0], ["sweet", 2, 0.5]]],
+            [74.0, [["sweet", 4, 0.45]]],
+        ],
+        "reinforcement": {
+            "start": 86.0,
+            "interval": 11.0,
+            "max_active_enemies": 9,
+            "retry_delay": 2.5,
+            "patterns": [
+                [["sweet", 3, 0.45]],
+                [["roasted_sweet", 1, 0.0], ["sweet", 2, 0.5]],
+                [["sweet", 4, 0.42]],
+            ],
+        },
+    },
+    2: {
+        "name": "Angry Sweet Potato Crowd 2",
+        "subtitle": "Larger crowds arrive, with roasted fighters mixed into the front line.",
+        "available_units": ["potato","boiled","roasted","fried","sprout_archer","stone_guard","seed_medic","starch_cannon","shieldbearer","potato_charger"],
+        "ally_base_hp": 2400,
+        "enemy_base_hp": 1900,
+        "waves": [
+            [4.0, [["sweet", 2, 0.55]]],
+            [11.0, [["sweet", 2, 0.5]]],
+            [18.0, [["roasted_sweet", 1, 0.0], ["sweet", 1, 0.5]]],
+            [27.0, [["sweet", 3, 0.45]]],
+            [37.0, [["roasted_sweet", 1, 0.0], ["sweet", 2, 0.45]]],
+            [48.0, [["sweet", 4, 0.42]]],
+            [60.0, [["roasted_sweet", 2, 0.7], ["sweet", 2, 0.45]]],
+            [73.0, [["sweet", 4, 0.4]]],
+        ],
+        "reinforcement": {
+            "start": 85.0,
+            "interval": 9.5,
+            "max_active_enemies": 10,
+            "retry_delay": 2.5,
+            "patterns": [
+                [["sweet", 4, 0.42]],
+                [["roasted_sweet", 1, 0.0], ["sweet", 3, 0.42]],
+                [["roasted_sweet", 2, 0.7], ["sweet", 1, 0.45]],
+            ],
+        },
+    },
+    3: {
+        "name": "Angry Sweet Potato Crowd 3",
+        "subtitle": "Heavy crowds attack in waves, but with enough breathing room to recover.",
+        "available_units": ["potato","boiled","roasted","fried","sprout_archer","stone_guard","seed_medic","starch_cannon","shieldbearer","potato_charger"],
+        "ally_base_hp": 2700,
+        "enemy_base_hp": 2400,
+        "waves": [
+            [3.5, [["sweet", 2, 0.5]]],
+            [10.0, [["sweet", 3, 0.45]]],
+            [18.0, [["roasted_sweet", 1, 0.0], ["sweet", 2, 0.45]]],
+            [27.0, [["sweet", 4, 0.42]]],
+            [37.0, [["roasted_sweet", 2, 0.7], ["sweet", 2, 0.42]]],
+            [48.0, [["sweet", 4, 0.4]]],
+            [60.0, [["roasted_sweet", 2, 0.7], ["sweet", 3, 0.4]]],
+            [73.0, [["sweet", 5, 0.38]]],
+        ],
+        "reinforcement": {
+            "start": 86.0,
+            "interval": 9.0,
+            "max_active_enemies": 11,
+            "retry_delay": 2.5,
+            "patterns": [
+                [["sweet", 4, 0.4]],
+                [["roasted_sweet", 2, 0.7], ["sweet", 2, 0.42]],
+                [["sweet", 5, 0.38]],
+            ],
+        },
+    },
+},102:{
+    1: {
+        "name": "Autobahn 1",
+        "subtitle": "Sweet Fries and rammers turn the battlefield into a speed lane.",
+        "available_units": ["potato","boiled","roasted","fried","sprout_archer","stone_guard","seed_medic","starch_cannon","shieldbearer","potato_charger"],
+        "ally_base_hp": 2200,
+        "enemy_base_hp": 1500,
+        "waves": [
+            [3.0, [["sweet_fries", 2, 0.5]]],
+            [9.0, [["sweet_rammer", 1, 0.0]]],
+            [15.0, [["sweet_fries", 3, 0.45]]],
+            [22.0, [["sweet_rammer", 1, 0.0], ["sweet_fries", 2, 0.45]]],
+            [31.0, [["sweet_fries", 4, 0.4]]],
+            [41.0, [["sweet_rammer", 2, 0.8]]],
+            [52.0, [["sweet_rammer", 1, 0.0], ["sweet_fries", 4, 0.38]]],
+            [65.0, [["sweet_fries", 5, 0.35]]],
+        ],
+        "reinforcement": {
+            "start": 76.0,
+            "interval": 7.0,
+            "max_active_enemies": 11,
+            "retry_delay": 1.8,
+            "patterns": [
+                [["sweet_fries", 3, 0.4]],
+                [["sweet_rammer", 1, 0.0], ["sweet_fries", 2, 0.4]],
+                [["sweet_fries", 4, 0.35]],
+            ],
+        },
+    },
+    2: {
+        "name": "Autobahn 2",
+        "subtitle": "More lanes open, and the rush comes in tighter bursts.",
+        "available_units": ["potato","boiled","roasted","fried","sprout_archer","stone_guard","seed_medic","starch_cannon","shieldbearer","potato_charger"],
+        "ally_base_hp": 2400,
+        "enemy_base_hp": 1900,
+        "waves": [
+            [2.5, [["sweet_fries", 3, 0.4]]],
+            [7.5, [["sweet_rammer", 1, 0.0]]],
+            [13.0, [["sweet_fries", 4, 0.35]]],
+            [19.0, [["sweet_rammer", 2, 0.75]]],
+            [27.0, [["sweet_rammer", 1, 0.0], ["sweet_fries", 4, 0.35]]],
+            [36.0, [["sweet_fries", 6, 0.3]]],
+            [46.0, [["sweet_rammer", 2, 0.7], ["sweet_fries", 3, 0.33]]],
+            [58.0, [["sweet_fries", 6, 0.3]]],
+            [69.0, [["sweet_rammer", 3, 0.65]]],
+        ],
+        "reinforcement": {
+            "start": 79.0,
+            "interval": 6.0,
+            "max_active_enemies": 13,
+            "retry_delay": 1.7,
+            "patterns": [
+                [["sweet_fries", 4, 0.33]],
+                [["sweet_rammer", 1, 0.0], ["sweet_fries", 3, 0.34]],
+                [["sweet_rammer", 2, 0.7]],
+            ],
+        },
+    },
+    3: {
+        "name": "Autobahn 3",
+        "subtitle": "Fast attack groups arrive in waves instead of one endless rush.",
+        "available_units": ["potato","boiled","roasted","fried","sprout_archer","stone_guard","seed_medic","starch_cannon","shieldbearer","potato_charger"],
+        "ally_base_hp": 2700,
+        "enemy_base_hp": 2400,
+        "waves": [
+            [2.5, [["sweet_fries", 3, 0.4]]],
+            [8.0, [["sweet_rammer", 1, 0.0]]],
+            [14.0, [["sweet_fries", 4, 0.35]]],
+            [21.0, [["sweet_rammer", 1, 0.0], ["sweet_fries", 2, 0.4]]],
+            [30.0, [["sweet_fries", 5, 0.33]]],
+            [40.0, [["sweet_rammer", 2, 0.75]]],
+            [51.0, [["sweet_rammer", 1, 0.0], ["sweet_fries", 4, 0.34]]],
+            [63.0, [["sweet_fries", 6, 0.3]]],
+            [75.0, [["sweet_rammer", 2, 0.7], ["sweet_fries", 3, 0.34]]],
+        ],
+        "reinforcement": {
+            "start": 86.0,
+            "interval": 7.0,
+            "max_active_enemies": 12,
+            "retry_delay": 2.0,
+            "patterns": [
+                [["sweet_fries", 4, 0.34]],
+                [["sweet_rammer", 1, 0.0], ["sweet_fries", 3, 0.35]],
+                [["sweet_rammer", 2, 0.75]],
+            ],
+        },
+    },
+},103:{
+    1: {
+        "name": "Nomad Sweet Potatoes 1",
+        "subtitle": "Archers roam behind a simple screen of roasted guards.",
+        "available_units": ["potato","boiled","roasted","fried","sprout_archer","stone_guard","seed_medic","starch_cannon","shieldbearer","potato_charger"],
+        "ally_base_hp": 2200,
+        "enemy_base_hp": 1600,
+        "waves": [
+            [4.0, [["roasted_sweet", 1, 0.0], ["sweet_archer", 1, 0.0]]],
+            [12.0, [["sweet", 2, 0.5], ["sweet_archer", 1, 0.0]]],
+            [21.0, [["roasted_sweet", 1, 0.0], ["sweet_archer", 2, 0.6]]],
+            [32.0, [["mattang", 1, 0.0], ["sweet_archer", 1, 0.0]]],
+            [44.0, [["roasted_sweet", 2, 0.7], ["sweet_archer", 2, 0.6]]],
+            [58.0, [["sweet_priest", 1, 0.0], ["sweet_archer", 2, 0.6]]],
+            [72.0, [["mattang", 1, 0.0], ["sweet_archer", 2, 0.6]]],
+        ],
+        "reinforcement": {
+            "start": 84.0,
+            "interval": 10.0,
+            "max_active_enemies": 10,
+            "retry_delay": 2.0,
+            "patterns": [
+                [["roasted_sweet", 1, 0.0], ["sweet_archer", 2, 0.6]],
+                [["sweet", 2, 0.45], ["sweet_archer", 2, 0.6]],
+                [["mattang", 1, 0.0], ["sweet_archer", 1, 0.0]],
+            ],
+        },
+    },
+    2: {
+        "name": "Nomad Sweet Potatoes 2",
+        "subtitle": "Archer groups advance behind lighter and more separated escorts.",
+        "available_units": ["potato","boiled","roasted","fried","sprout_archer","stone_guard","seed_medic","starch_cannon","shieldbearer","potato_charger"],
+        "ally_base_hp": 2400,
+        "enemy_base_hp": 2000,
+        "waves": [
+            [4.0, [["roasted_sweet", 1, 0.0], ["sweet_archer", 1, 0.0]]],
+            [14.0, [["sweet", 2, 0.5], ["sweet_archer", 1, 0.0]]],
+            [25.0, [["mattang", 1, 0.0], ["sweet_archer", 1, 0.0]]],
+            [38.0, [["roasted_sweet", 1, 0.0], ["sweet_archer", 2, 0.6]]],
+            [52.0, [["sweet_priest", 1, 0.0], ["sweet", 2, 0.5], ["sweet_archer", 1, 0.0]]],
+            [67.0, [["mattang", 1, 0.0], ["sweet_archer", 2, 0.6]]],
+            [82.0, [["roasted_sweet", 2, 0.7], ["sweet_archer", 2, 0.6]]],
+        ],
+        "reinforcement": {
+            "start": 95.0,
+            "interval": 11.0,
+            "max_active_enemies": 9,
+            "retry_delay": 2.5,
+            "patterns": [
+                [["roasted_sweet", 1, 0.0], ["sweet_archer", 2, 0.6]],
+                [["sweet", 2, 0.5], ["sweet_archer", 1, 0.0]],
+                [["mattang", 1, 0.0], ["sweet_archer", 1, 0.0]],
+                [["sweet_priest", 1, 0.0], ["sweet", 1, 0.0], ["sweet_archer", 1, 0.0]],
+            ],
+        },
+    },
+    3: {
+        "name": "Nomad Sweet Potatoes 3",
+        "subtitle": "A layered archer formation with support units appearing in separate waves.",
+        "available_units": ["potato","boiled","roasted","fried","sprout_archer","stone_guard","seed_medic","starch_cannon","shieldbearer","potato_charger"],
+        "ally_base_hp": 2700,
+        "enemy_base_hp": 2500,
+        "waves": [
+            [4.0, [["roasted_sweet", 1, 0.0], ["sweet_archer", 2, 0.6]]],
+            [16.0, [["mattang", 1, 0.0], ["sweet_archer", 2, 0.6]]],
+            [30.0, [["sweet_drummer", 1, 0.0], ["roasted_sweet", 1, 0.0], ["sweet_archer", 2, 0.6]]],
+            [45.0, [["sweet_priest", 1, 0.0], ["sweet", 2, 0.5], ["sweet_archer", 2, 0.6]]],
+            [61.0, [["mattang", 1, 0.0], ["sweet_archer", 2, 0.6]]],
+            [77.0, [["sweet_drummer", 1, 0.0], ["roasted_sweet", 2, 0.7], ["sweet_archer", 2, 0.6]]],
+            [94.0, [["sweet_priest", 1, 0.0], ["roasted_sweet", 1, 0.0], ["sweet_archer", 2, 0.6]]],
+        ],
+        "reinforcement": {
+            "start": 108.0,
+            "interval": 11.0,
+            "max_active_enemies": 10,
+            "retry_delay": 2.5,
+            "patterns": [
+                [["mattang", 1, 0.0], ["sweet_archer", 2, 0.6]],
+                [["sweet_drummer", 1, 0.0], ["roasted_sweet", 1, 0.0], ["sweet_archer", 1, 0.0]],
+                [["sweet_priest", 1, 0.0], ["sweet", 2, 0.5], ["sweet_archer", 1, 0.0]],
+            ],
+        },
+    },
+}},specialMeta:{}};
+const W=1280,H=720,GY=500,ABX=70,EBX=W-70,ASX=125,ESX=W-125,MAXR=1200;
+const C={BG:'#ebf5e1',GROUND:'#b88b5b',GD:'#875d37',TEXT:'#232323',WHITE:'#fafafa',BLACK:'#141414',GRAY:'#8c8c8c',LG:'#d2d2d2',GREEN:'#46aa50',RED:'#d24141',BLUE:'#4678d2',YELLOW:'#f5cd46',ORANGE:'#e68c32',PURPLE:'#874696',HUD:'#faf8ec'};
+const cv=document.getElementById('game'),ctx=cv.getContext('2d');
+let mode='mode',selected=1,session=null,scroll=0,last=performance.now(),buttons=[];
+const chapters=DATA.chapters, allies=DATA.allies, enemies=DATA.enemies;
+const special=id=>+id>=101, unitKeys=id=>['potato','boiled','roasted','fried',...(id==2||id==3||special(id)?['sprout_archer','stone_guard','seed_medic','starch_cannon']:[]),...(id==3||special(id)?['shieldbearer','potato_charger']:[])];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function rr(x,y,w,h,r,fill,stroke=C.BLACK,lw=0){ctx.beginPath();ctx.roundRect(x,y,w,h,r);if(fill){ctx.fillStyle=fill;ctx.fill()}if(lw){ctx.strokeStyle=stroke;ctx.lineWidth=lw;ctx.stroke()}}
+function txt(s,x,y,size=24,color=C.TEXT,align='left',bold=false){ctx.fillStyle=color;ctx.font=`${bold?'bold ':''}${size}px Arial`;ctx.textAlign=align;ctx.textBaseline='middle';ctx.fillText(s,x,y)}
+function bar(x,y,w,h,v,color=C.GREEN){ctx.fillStyle=C.BLACK;ctx.fillRect(x,y,w,h);ctx.fillStyle=color;ctx.fillRect(x+1,y+1,Math.max(0,(w-2)*clamp(v,0,1)),h-2)}
+function hit(r,x,y){return x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h}
+class Base{constructor(x,hp,ally){this.x=x;this.hp=this.maxHp=hp;this.ally=ally;this.radius=46}damage(v){this.hp=Math.max(0,this.hp-v)}draw(){let x=this.x,col=this.ally?C.BLUE:C.RED;rr(x-42,GY-82,84,82,8,col);ctx.fillStyle=col;ctx.fillRect(x-54,GY-112,34,45);ctx.fillRect(x+20,GY-112,34,45);ctx.strokeStyle=C.BLACK;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x-2,GY-82);ctx.lineTo(x-2,GY-145);ctx.stroke();ctx.fillStyle=this.ally?C.YELLOW:C.PURPLE;ctx.beginPath();ctx.moveTo(x-2,GY-145);ctx.lineTo(x+34,GY-132);ctx.lineTo(x-2,GY-120);ctx.fill();bar(x-50,GY+14,100,12,this.hp/this.maxHp)}}
+class Fighter{
+ constructor(x,ally,s){Object.assign(this,{x,ally,s,hp:s.hp,maxHp:s.hp,radius:s.radius,attackTimer:0,flash:0,first:false,shield:s.shield||0,maxShield:s.shield||0,shieldFlash:0,breakFlash:0,breakPending:false,enraged:false,attackCount:0,asBonus:0,msBonus:0})}
+ damage(v,type='normal'){if(this.ally&&this.s.key==='boiled'&&type==='fire')v*=.7;v*=this.s.armor_multiplier??1;if(this.shield>0){let cap=this.s.shield_damage_cap||0,sd=Math.min(this.shield,cap?Math.min(v,cap):v);this.shield-=sd;this.shieldFlash=.16;if(this.shield<=0){this.shield=0;this.breakFlash=.45;this.breakPending=true}v=0}if(v>0)this.hp=Math.max(0,this.hp-v);this.flash=.12}
+ interval(){let n=this.s.attack_interval;if(this.s.is_boss&&this.hp<=this.maxHp*.5){this.enraged=true;n/=1.3}return n/(1+this.asBonus)}
+ knock(d,dir){this.x+=dir*d*(this.s.knockback_multiplier??1);this.x=this.ally?Math.max(ABX+this.radius+12,this.x):Math.min(EBX-this.radius-12,this.x)}
+ update(dt,opp,base,friends){if(this.hp<=0)return;this.attackTimer=Math.max(0,this.attackTimer-dt);this.flash=Math.max(0,this.flash-dt);this.shieldFlash=Math.max(0,this.shieldFlash-dt);this.breakFlash=Math.max(0,this.breakFlash-dt);this.asBonus=this.msBonus=0;
+  if(!this.ally)for(const f of friends)if(f!==this&&f.hp>0&&Math.abs(f.x-this.x)<=+(f.s.aura_radius||0)){this.asBonus=Math.max(this.asBonus,+(f.s.aura_attack_speed_bonus||0));this.msBonus=Math.max(this.msBonus,+(f.s.aura_move_speed_bonus||0))}
+  if((this.s.heal_power||0)>0&&this.attackTimer<=0){let q=friends.filter(f=>f!==this&&f.hp>0&&f.hp<f.maxHp&&Math.abs(f.x-this.x)<=this.s.heal_range);if(q.length){q.sort((a,b)=>a.hp/a.maxHp-b.hp/b.maxHp);q[0].hp=Math.min(q[0].maxHp,q[0].hp+this.s.heal_power);q[0].flash=.1;this.attackTimer=this.s.heal_interval||3;return}}
+  let cand=opp.filter(o=>o.hp>0&&(this.ally?o.x>=this.x-5:o.x<=this.x+5)),target=null,dir=this.ally?1:-1;if(cand.length)target=this.ally?cand.reduce((a,b)=>a.x<b.x?a:b):cand.reduce((a,b)=>a.x>b.x?a:b);if(target&&Math.abs(target.x-this.x)<=this.radius+target.radius+this.s.attack_range){this.attack(target,opp);return}if(Math.abs(base.x-this.x)<=this.radius+base.radius+this.s.attack_range){this.attack(base,opp);return}this.x+=dir*this.s.speed*(1+this.msBonus)*dt}
+ attack(t,opp){if(this.attackTimer>0)return;let dmg=+this.s.attack,first=this.ally&&!this.first;if(first&&(this.s.first_hit_multiplier||1)>1){dmg*=this.s.first_hit_multiplier;this.first=true}if(t instanceof Fighter){t.damage(dmg,this.s.damage_type||'normal');this.attackCount++;if(first&&(this.s.first_hit_knockback||0)>0)t.knock(this.s.first_hit_knockback,this.ally?1:-1);let every=this.s.attack_knockback_every||0;if(every&&(this.s.attack_knockback_distance||0)>0&&this.attackCount%every===0)t.knock(this.s.attack_knockback_distance,this.ally?1:-1);if((this.s.splash_radius||0)>0)for(const o of opp)if(o!==t&&o.hp>0&&Math.abs(o.x-t.x)<=this.s.splash_radius)o.damage(dmg*.6,this.s.damage_type||'normal')}else t.damage(dmg);this.attackTimer=this.interval()}
+ draw(){let x=this.x,y=GY-this.radius,col=this.flash>0?C.WHITE:`rgb(${this.s.color.join(',')})`;ctx.beginPath();ctx.ellipse(x,y,this.radius*.9,this.radius*.675,0,0,Math.PI*2);ctx.fillStyle=col;ctx.fill();ctx.strokeStyle=C.BLACK;ctx.lineWidth=2;ctx.stroke();ctx.fillStyle=C.BLACK;ctx.beginPath();ctx.arc(x+(this.ally?6:-6),y-2,2,0,7);ctx.fill();if(['fried','sweet_fries'].includes(this.s.key))for(const o of[-8,0,8])rr(x+o-3,y-this.radius,6,18,2,col,C.BLACK,1);if(this.s.is_boss){ctx.fillStyle=C.YELLOW;ctx.beginPath();ctx.moveTo(x-18,y-this.radius-8);ctx.lineTo(x-9,y-this.radius-24);ctx.lineTo(x,y-this.radius-8);ctx.lineTo(x+9,y-this.radius-24);ctx.lineTo(x+18,y-this.radius-8);ctx.fill();if(this.enraged){ctx.strokeStyle=C.RED;ctx.lineWidth=3;ctx.beginPath();ctx.arc(x,y,this.radius+7,0,7);ctx.stroke()}}if(this.maxShield>0&&this.shield>0){ctx.strokeStyle=`rgba(80,190,255,${this.shieldFlash>0?.75:.42})`;ctx.lineWidth=5;ctx.beginPath();ctx.arc(x,y,this.radius+10,0,7);ctx.stroke()}if(this.breakFlash>0){ctx.strokeStyle='rgb(80,190,255)';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x,y,this.radius+12+(.45-this.breakFlash)*45,0,7);ctx.stroke()}bar(x-24,y-this.radius-19,48,6,this.hp/this.maxHp);if(this.maxShield>0&&this.shield>0)bar(x-24,y-this.radius-28,48,5,this.shield/this.maxShield,C.BLUE)}
+}
+class Job{constructor(t,key,n,gap){Object.assign(this,{t,key,n,gap,next:t})}update(now,out){while(this.n>0&&now>=this.next){out.push(new Fighter(ESX,false,enemies[this.key]));this.n--;this.next+=this.gap;if(this.gap<=0)break}}get done(){return this.n<=0}}
+class Game{
+ constructor(ch,st){this.ch=+ch;this.sn=+st;this.stage=chapters[ch][st];this.all=[];this.ene=[];this.ab=new Base(ABX,this.stage.ally_base_hp,true);this.eb=new Base(EBX,this.stage.enemy_base_hp,false);this.resource=(ch==2||ch==3||special(ch))?350:200;this.rate=(ch==2||ch==3||special(ch))?32:25;this.level=1;this.upCost=300;this.elapsed=0;this.result=null;this.jobs=[];this.message='';this.msgTime=0;this.reward=0;this.rewardTime=0;this.cd=Object.fromEntries(Object.keys(allies).map(k=>[k,0]));this.ri=0;this.bossSpawned=false;this.bossDeadTime=null;this.nextPost=Infinity;let r=this.stage.reinforcement;this.nextReinf=!r||r.start_after_boss!==undefined?Infinity:+r.start;this.flags=new Set;this.eventReinfs=[];this.defeated=0;this.deadBosses=new Set;for(const [t,groups] of this.stage.waves)this.schedule(groups,t);if(this.stage.initial_event_reinforcement)this.activate(this.stage.initial_event_reinforcement)}
+ schedule(groups,t){let off=0;for(const [k,n,g] of groups){this.jobs.push(new Job(t+off,k,n,g));off+=Math.max(.4,g*Math.max(0,n-1)*.35)}}
+ msg(s){this.message=s;this.msgTime=1.5}knockAll(d){for(const a of this.all)if(a.hp>0)a.knock(d,-1)}
+ spawnBoss(k){this.ene.push(new Fighter(ESX,false,enemies[k]));this.knockAll(k==='grand_general'?150:110);this.msg(`${enemies[k].name} has entered the battlefield!`)}
+ activate(c){let tag=String(c.tag||`event_${this.eventReinfs.length}`);this.eventReinfs=this.eventReinfs.filter(r=>r.tag!==tag);this.eventReinfs.push({tag,next:this.elapsed+(+c.start_delay||0),interval:+c.interval,patterns:c.patterns,index:0,active:true})}
+ trigger(name,c){if(this.flags.has(name))return;this.flags.add(name);let stop=new Set(c.stop_reinforcement_tags||[]);for(const r of this.eventReinfs)if(stop.has(r.tag))r.active=false;if(+c.knockback>0)this.knockAll(+c.knockback);if(c.boss_spawn)this.spawnBoss(c.boss_spawn);if(c.spawn)this.schedule(c.spawn,this.elapsed);for(const [d,g] of(c.delayed_spawns||[]))this.schedule(g,this.elapsed+ +d);if(c.start_reinforcement)this.activate(c.start_reinforcement)}
+ updateEventReinfs(){for(const r of this.eventReinfs)if(r.active)while(this.elapsed>=r.next){this.schedule(r.patterns[r.index%r.patterns.length],r.next);r.index++;r.next+=r.interval}}
+ stageEvents(){let c=this.stage.base_first_hit_event;if(c&&this.eb.hp<this.eb.maxHp)this.trigger('base_first_hit',c);for(const e of(this.stage.base_hp_ratio_events||[]))if(this.eb.hp<=this.eb.maxHp*e.ratio)this.trigger(String(e.name),e);c=this.stage.clear_field_event;if(c&&this.defeated>=+(c.min_defeats||1)&&!this.ene.some(e=>e.hp>0))this.trigger(String(c.name),c)}
+ bossDefeatEvents(){let map=this.stage.boss_defeat_events||{};for(const e of this.ene)if(e.hp<=0&&e.s.is_boss&&!this.deadBosses.has(e.s.key)){this.deadBosses.add(e.s.key);let c=map[e.s.key];if(c)this.trigger(String(c.name||`${e.s.key}_defeated`),c)}}
+ maybeBoss(){if(this.stage.boss_spawn_time===undefined||this.bossSpawned)return;let go=this.elapsed>=+this.stage.boss_spawn_time,ratio=+(this.stage.boss_trigger_hp_ratio||0);if(!go&&!(ratio>0&&this.eb.hp<=this.eb.maxHp*ratio))return;let k=this.stage.boss_enemy_key||'boss';this.ene.push(new Fighter(ESX,false,enemies[k]));this.bossSpawned=true;if([9,10].includes(this.sn))this.knockAll(k==='grand_general'?150:110);this.message='General Goguma has entered the battlefield!';this.msgTime=2.5;let r=this.stage.reinforcement;if(r&&r.start_after_boss!==undefined)this.nextReinf=this.elapsed+ +r.start_after_boss}
+ reinf(){let r=this.stage.reinforcement;if(!r||(r.requires_boss_spawned&&!this.bossSpawned))return;if(r.stop_when_boss_dead&&this.bossSpawned&&!this.ene.some(e=>e.hp>0&&e.s.is_boss))return;while(this.elapsed>=this.nextReinf){let active=this.ene.filter(e=>e.hp>0&&!(r.exclude_boss_from_cap&&e.s.is_boss)).length;if(active>=+(r.max_active_enemies||9999)){this.nextReinf+=+(r.retry_delay||2);return}this.schedule(r.patterns[this.ri%r.patterns.length],this.nextReinf);this.ri++;this.nextReinf+=+r.interval}}
+ bossState(){if(!this.bossSpawned||this.bossDeadTime!==null||this.ene.some(e=>e.hp>0&&e.s.is_boss))return;this.bossDeadTime=this.elapsed;let p=this.stage.post_boss_reinforcement;if(p)this.nextPost=this.elapsed+(+p.start_delay||0);this.msg('General Goguma defeated! Remaining defenders are mobilizing!')}
+ post(){let p=this.stage.post_boss_reinforcement;if(!p||this.bossDeadTime===null||this.eb.hp<=0)return;while(this.elapsed>=this.nextPost){this.schedule(p.pattern,this.nextPost);this.nextPost+=+p.interval}}
+ shieldBreaks(){for(const e of this.ene)if(e.breakPending){e.breakPending=false;let n=0,d=+(e.s.shield_break_damage||0),r=+(e.s.shield_break_radius||0);if(d&&r){for(const a of this.all)if(a.hp>0&&Math.abs(a.x-e.x)<=r){a.damage(d);n++}if(n)this.msg(`Sugar shield burst! ${n} Potato unit(s) hit.`)}}}
+ spawn(k){if(this.result)return;if(!this.stage.available_units.includes(k)){this.msg('Unit not available in this stage.');return}let s=allies[k];if(this.cd[k]>0)return;if(this.resource<s.cost){this.msg('Not enough starch!');return}if(this.all.length>=20){this.msg('Unit limit reached (20).');return}this.resource-=s.cost;this.cd[k]=s.cooldown;this.all.push(new Fighter(ASX-Math.min(18,this.all.length*2),true,s))}
+ upgrade(){if(this.result)return;if(this.level>=3){this.msg('Starch production is MAX.');return}if(this.resource<this.upCost){this.msg('Not enough starch for upgrade.');return}this.resource-=this.upCost;this.level++;this.rate=(this.ch==2||this.ch==3||special(this.ch)?{1:32,2:48,3:70}:{1:25,2:40,3:60})[this.level];this.upCost={2:500,3:0}[this.level];this.msg(`Starch production Lv.${this.level}!`)}
+ update(dt){if(this.result)return;this.elapsed+=dt;this.resource=Math.min(MAXR,this.resource+this.rate*dt);this.msgTime=Math.max(0,this.msgTime-dt);this.rewardTime=Math.max(0,this.rewardTime-dt);for(const k in this.cd)this.cd[k]=Math.max(0,this.cd[k]-dt);this.maybeBoss();this.reinf();this.updateEventReinfs();for(const j of this.jobs)j.update(this.elapsed,this.ene);for(const a of this.all)a.update(dt,this.ene,this.eb,this.all);this.stageEvents();this.updateEventReinfs();this.maybeBoss();this.shieldBreaks();this.bossState();this.post();for(const j of this.jobs)if(!j.done)j.update(this.elapsed,this.ene);for(const e of this.ene)e.update(dt,this.all,this.ab,this.ene);this.bossDefeatEvents();let dead=this.ene.filter(e=>e.hp<=0);this.defeated+=dead.length;let reward=dead.reduce((n,e)=>n+(+e.s.reward||0),0);if(reward){this.resource=Math.min(MAXR,this.resource+reward);this.reward=reward;this.rewardTime=1}this.stageEvents();this.updateEventReinfs();for(const j of this.jobs)if(!j.done)j.update(this.elapsed,this.ene);this.all=this.all.filter(u=>u.hp>0&&u.x<W+100);this.ene=this.ene.filter(u=>u.hp>0&&u.x>-100);if(this.ab.hp<=0)this.result='DEFEAT';else if(this.eb.hp<=0){if(this.stage.victory_requires_no_boss){let req=this.stage.victory_requires_event;if((!req||this.flags.has(req))&&!this.ene.some(e=>e.hp>0&&e.s.is_boss))this.result='VICTORY'}else if(this.stage.requires_boss_defeat){if(this.bossSpawned&&this.bossDeadTime!==null)this.result='VICTORY'}else this.result='VICTORY'}}
+ draw(){battle();this.ab.draw();this.eb.draw();[...this.all,...this.ene].sort((a,b)=>a.x-b.x).forEach(f=>f.draw());this.hud();if(this.result){ctx.fillStyle='#00000091';ctx.fillRect(0,0,W,H);txt(this.result,W/2,H/2-45,64,this.result==='VICTORY'?C.GREEN:C.RED,'center',true);txt('Press ENTER: replay   |   ESC: stage select',W/2,H/2+35,24,C.WHITE,'center')}}
+ hud(){let hh=this.ch==3||special(this.ch)?260:this.ch==2?205:150;ctx.fillStyle=C.HUD;ctx.fillRect(0,0,W,hh);ctx.fillStyle=C.GD;ctx.fillRect(0,hh,W,3);txt(this.stage.name,28,34,38,C.TEXT,'left',true);txt(this.stage.subtitle,30,63,18,'#464646');rr(860,18,390,58,10,'#fffad2',C.GD,2);txt(`Starch: ${Math.floor(this.resource)} / ${MAXR}    +${Math.floor(this.rate)}/s`,880,47,24);if(this.rewardTime>0)txt(`+${this.reward}`,1165,86,24,C.GREEN);
+  const keys=unitKeys(this.ch);for(let i=0;i<keys.length;i++){let k=keys[i],s=allies[k],x=28+(i%4)*190,y=88+Math.floor(i/4)*55,avail=this.stage.available_units.includes(k);rr(x,y,175,50,8,avail?`rgb(${s.color.join(',')})`:C.LG,C.BLACK,2);txt(`[${i===9?0:i+1}] ${s.name} ${s.cost}`,x+7,y+16,18,avail?C.BLACK:C.GRAY);if(!avail)txt('LOCKED',x+52,y+38,18,C.GRAY);else if(this.cd[k]>0){ctx.fillStyle='#00000069';ctx.fillRect(x,y,175*this.cd[k]/s.cooldown,50);txt(`${this.cd[k].toFixed(1)}s`,x+87,y+38,18,C.WHITE,'center')}else if(this.resource<s.cost){ctx.fillStyle='#00000046';ctx.fillRect(x,y,175,50)}}rr(790,91,240,44,8,C.YELLOW,C.BLACK,2);txt(this.level>=3?'[A] Starch Lv.3 MAX':`[A] Upgrade Lv.${this.level+1} (${this.upCost})`,805,113,18);txt(`Time ${this.elapsed.toFixed(1).padStart(5,'0')}s   Allies ${this.all.length}/20   Enemies ${this.ene.length}   Waves left ${this.jobs.filter(j=>!j.done).length}`,1048,113,18);if(this.msgTime>0)txt(this.message,W/2,this.ch==3||special(this.ch)?280:this.ch==2?225:176,24,C.RED,'center')}
+}
+function battle(){ctx.fillStyle=C.BG;ctx.fillRect(0,0,W,H);ctx.fillStyle='#b7db9c';ctx.fillRect(0,150,W,GY-150);ctx.fillStyle=C.GROUND;ctx.fillRect(0,GY,W,H-GY);ctx.fillStyle=C.GD;ctx.fillRect(0,GY,W,5);ctx.strokeStyle='#a57d4b';ctx.lineWidth=2;for(let x=160;x<W-100;x+=90){ctx.beginPath();ctx.moveTo(x,GY+35);ctx.lineTo(x+50,H);ctx.stroke()}}
+function modeMenu(){ctx.fillStyle='#f0ebd2';ctx.fillRect(0,0,W,H);txt('POTATO KINGDOM DEFENSE',W/2,105,64,'#91562b','center',true);txt('Choose game mode',W/2,165,24,C.TEXT,'center');buttons=[];[['main','MAIN STAGES','Chapters 1, 2, and 3','#ab7e48'],['special','SPECIAL STAGES','Three themed challenge chapters',C.PURPLE]].forEach((d,i)=>{let r={x:250,y:220+i*180,w:780,h:135,v:d[0]};rr(r.x,r.y,r.w,r.h,20,C.WHITE,d[3],6);txt(d[1],295,r.y+43,38,d[3],'left',true);txt(d[2],300,r.y+91,24);buttons.push(r)});txt('Click a mode or press 1 / 2',W/2,675,18,C.TEXT,'center')}
+function chapterMenu(sp=false){ctx.fillStyle='#f0ebd2';ctx.fillRect(0,0,W,H);txt('POTATO KINGDOM DEFENSE',W/2,90,64,sp?C.PURPLE:'#91562b','center',true);txt(sp?'SPECIAL STAGES - Choose a challenge chapter':'MAIN STAGES - Choose a chapter',W/2,145,24,C.TEXT,'center');buttons=[];let d=sp?[[101,'ANGRY CROWD','3-stage themed challenge',C.RED],[102,'AUTOBAHN','3-stage themed challenge',C.ORANGE],[103,'NOMAD ARCHERS','3-stage themed challenge',C.PURPLE]]:[[1,'CHAPTER 1','The First Sweet Potato Invasion','#ab7e48'],[2,'CHAPTER 2','The Imperial Counterattack',C.PURPLE],[3,'CHAPTER 3','Potato Kingdom Counteroffensive',C.ORANGE]];d.forEach((a,i)=>{let r={x:250,y:175+i*155,w:780,h:118,v:a[0]};rr(r.x,r.y,r.w,r.h,18,C.WHITE,a[3],5);txt(a[1],285,r.y+37,38,a[3],'left',true);txt(a[2],290,r.y+82,24);buttons.push(r)});txt(`Click a chapter or press 1 / 2 / 3. ESC returns to mode select.`,W/2,675,18,C.TEXT,'center')}
+function stageMenu(){ctx.fillStyle='#f0ebd2';ctx.fillRect(0,0,W,H);let sp=special(selected),col=sp?([C.RED,C.ORANGE,C.PURPLE][selected-101]):selected==1?'#91562b':selected==2?C.PURPLE:C.ORANGE;txt('POTATO KINGDOM DEFENSE',W/2,72,64,col,'center',true);txt(sp?`SPECIAL: ${['ANGRY CROWD','AUTOBAHN','NOMAD ARCHERS'][selected-101]}`:`Chapter ${selected}: stages ${selected}-1 to ${selected}-10`,W/2,120,24,C.TEXT,'center');rr(150,155,980,500,14,'#e8e2c6',C.GD,2);buttons=[];ctx.save();ctx.beginPath();ctx.rect(150,155,980,500);ctx.clip();let stages=chapters[selected],count=sp?3:10;for(let n=1;n<=count;n++){let y=170-scroll,r={x:185,y:y+(n-1)*82,w:910,h:68,v:n};if(r.y+r.h<155||r.y>655)continue;rr(r.x,r.y,r.w,r.h,11,C.WHITE,col,3);txt(stages[n].name,210,r.y+22,24);txt(stages[n].subtitle,212,r.y+49,18,'#4b4b4b');txt(String(n),1055,r.y+34,38,col,'center',true);buttons.push(r)}ctx.restore();if(count*82>500){let max=count*82-500,th=Math.max(60,470*500/(count*82)),ty=170+(470-th)*scroll/max;rr(1110,170,8,470,4,C.LG);rr(1110,ty,8,th,4,col)}txt(`Click a stage or press its number. ESC returns to ${sp?'special chapter select':'main chapter select'}.`,W/2,687,18,C.TEXT,'center')}
+function draw(){if(mode==='mode')modeMenu();else if(mode==='chapters')chapterMenu(false);else if(mode==='special')chapterMenu(true);else if(mode==='stages')stageMenu();else session.draw()}
+function start(n){session=new Game(selected,n);mode='game'}
+addEventListener('keydown',e=>{let k=e.key.toLowerCase();if(mode==='mode'){if(k==='1')mode='chapters';if(k==='2')mode='special'}else if(mode==='chapters'||mode==='special'){if(k==='escape')mode='mode';else if(['1','2','3'].includes(k)){selected=mode==='special'?100+ +k:+k;scroll=0;mode='stages'}}else if(mode==='stages'){let count=special(selected)?3:10,max=Math.max(0,count*82-500);if(k==='escape'){mode=special(selected)?'special':'chapters';scroll=0}else if(/^\d$/.test(k)){let n=k==='0'?10:+k;if(n>=1&&n<=count)start(n)}else if(k==='arrowdown')scroll=Math.min(max,scroll+64);else if(k==='arrowup')scroll=Math.max(0,scroll-64);else if(k==='pagedown')scroll=Math.min(max,scroll+320);else if(k==='pageup')scroll=Math.max(0,scroll-320)}else{if(k==='escape'){selected=session.ch;scroll=0;mode='stages';session=null}else if(k==='r'||(k==='enter'&&session.result))session=new Game(session.ch,session.sn);else if('1234567890'.includes(k))session.spawn(unitKeys(session.ch)[k==='0'?9:+k-1]);else if(k==='a')session.upgrade()}if(['arrowdown','arrowup',' '].includes(k))e.preventDefault()});
+cv.addEventListener('wheel',e=>{if(mode==='stages'){let count=special(selected)?3:10;scroll=clamp(scroll+Math.sign(e.deltaY)*72,0,Math.max(0,count*82-500));e.preventDefault()}},{passive:false});
+cv.addEventListener('pointerdown',e=>{let q=cv.getBoundingClientRect(),x=(e.clientX-q.left)*W/q.width,y=(e.clientY-q.top)*H/q.height;if(mode==='mode'){let b=buttons.find(r=>hit(r,x,y));if(b)mode=b.v==='main'?'chapters':'special'}else if(mode==='chapters'||mode==='special'){let b=buttons.find(r=>hit(r,x,y));if(b){selected=b.v;scroll=0;mode='stages'}}else if(mode==='stages'){let b=buttons.find(r=>hit(r,x,y));if(b)start(b.v)}else if(session&&!session.result){let keys=unitKeys(session.ch);for(let i=0;i<keys.length;i++){let r={x:28+(i%4)*190,y:88+Math.floor(i/4)*55,w:175,h:50};if(hit(r,x,y))session.spawn(keys[i])}if(hit({x:790,y:91,w:240,h:44},x,y))session.upgrade()}});
+function loop(now){let dt=Math.min((now-last)/1000,.05);last=now;if(mode==='game'&&session)session.update(dt);draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);
+</script></body></html>
